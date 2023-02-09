@@ -4,14 +4,13 @@ const token = process.env.TELEGRAM_TOKEN;
 
 console.log("starting")
 
-// Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, {polling: true});
 
 async function handleInitialMessage(initialMessage) {
     const opts = {reply_markup: {force_reply: true}};
 
-    let statusMessageRequest = await bot.sendMessage(welcomeMessage.from.id, 'Durumunuzu paylaşabilir misiniz?', opts);
-    bot.onReplyToMessage(welcomeMessage.chat.id, statusMessageRequest.message_id, handleStatusMessage)
+    let statusMessageRequest = await bot.sendMessage(initialMessage.from.id, 'Durumunuzu paylaşabilir misiniz?', opts);
+    bot.onReplyToMessage(initialMessage.chat.id, statusMessageRequest.message_id, handleStatusMessage)
 }
 
 async function handleStatusMessage(statusMessage) {
