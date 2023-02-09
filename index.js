@@ -1,59 +1,56 @@
 const TelegramBot = require('node-telegram-bot-api');
 
-const token = 'telegram bot token';
+const token = process.env.TELEGRAM_TOKEN;
 
 console.log("starting")
 
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, {polling: true});
 
-bot.onText(/start/, (msg, match) => {
-    console.log(msg, match)
+bot.onText(new RegExp("start", "i"), async (welcomeMessage) => {
     const opts = {
         reply_markup: {
-            keyboard: [
-                [
-                    {
-                        text: 'Enkazdayım',
-                        request_location: true,
-                        callback_data: 'edit'
-                    },
-                    {
-                        text: 'Erzak İhtiyacım var',
-                        request_location: true,
-                        callback_data: 'edit'
-                    }
-                ]
-            ]
+            force_reply: true
         }
     };
 
-    bot.sendMessage(msg.from.id, 'Durumunuzu paylaşabilir misiniz?', opts);
-});
-
-bot.on('location', async (locationMessage) => {
-    const opts = {
-        reply_markup: {
-            keyboard: [
-                [
-                    {
-                        text: 'İletişim bilgimi paylaş',
-                        request_contact: true,
-                        callback_data: 'edit'
-                    }
+    let statusMessageRequest = await bot.sendMessage(welcomeMessage.from.id, 'Durumunuzu paylaşabilir misiniz?', opts);
+    bot.onReplyToMessage(welcomeMessage.chat.id, statusMessageRequest.message_id, async (statusMessage) => {
+        const opts = {
+            reply_markup: {
+                keyboard: [
+                    [
+                        {
+                            text: 'Konum paylaş',
+                            request_location: true
+                        }
+                    ]
                 ]
-            ]
-        }
-    };
+            }
+        };
 
+        let locationMessageRequest = await bot.sendMessage(statusMessage.from.id, 'Konum bilgilerinizi paylaşabilir misiniz?', opts);
+        bot.onReplyToMessage(statusMessage.chat.id, locationMessageRequest.message_id, async (locationMessage) => {
+            const opts = {
+                reply_markup: {
+                    one_time_keyboard: true,
+                    keyboard: [
+                        [
+                            {
+                                text: 'Telefon paylaş',
+                                request_contact: true,
+                            }
+                        ]
+                    ]
+                }
+            };
 
-    let message = await bot.sendMessage(locationMessage.from.id, 'İletişim bilgilerinizi paylaşabilir misiniz?', opts);
-
-    bot.onReplyToMessage(locationMessage.chat.id, message.message_id, (contactMessage) => {
-        bot.sendMessage(locationMessage.chat.id, "Bilgileriniz alınmıştır. Teşekkürler!")
+            let contactMessageRequest = await bot.sendMessage(locationMessage.chat.id, "İletişim bilgilerinizi paylaşabilir misiniz?", opts)
+            bot.onReplyToMessage(locationMessage.chat.id, contactMessageRequest.message_id, async (contactMessage) => {
+                console.log(statusMessage.text, locationMessage.location, contactMessage.contact)
+                await bot.sendMessage(contactMessage.chat.id, "Bilgileriniz alınmıştır teşekkürler.")
+            })
+        })
     })
 });
 
-bot.on("message", (msg) => {
-    console.log(msg)
-})
