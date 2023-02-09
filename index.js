@@ -1,11 +1,5 @@
 const TelegramBot = require('node-telegram-bot-api');
 
-const token = process.env.TELEGRAM_TOKEN;
-
-console.log("starting")
-
-const bot = new TelegramBot(token, {polling: true});
-
 async function handleInitialMessage(initialMessage) {
     const opts = {reply_markup: {force_reply: true}};
 
@@ -58,5 +52,6 @@ async function handleContactMessage(statusMessage, locationMessage, contactMessa
     )
 }
 
+const token = process.env.TELEGRAM_TOKEN;
+const bot = new TelegramBot(token, {polling: true});
 bot.onText(new RegExp("start", "i"), handleInitialMessage);
-
