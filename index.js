@@ -1,10 +1,17 @@
 const TelegramBot = require('node-telegram-bot-api');
 
-async function handleInitialMessage(initialMessage) {
-    const opts = {reply_markup: {force_reply: true}};
+const needs = [
+    "yemek", "çadır", "bebek bezi", "ilaç", "su", "elektrik"
+]
 
-    let statusMessageRequest = await bot.sendMessage(initialMessage.from.id, 'Durumunuzu paylaşabilir misiniz?', opts);
-    bot.onReplyToMessage(initialMessage.chat.id, statusMessageRequest.message_id, handleStatusMessage)
+async function handleInitialMessage(initialMessage) {
+    const pollOptions = {
+        allows_multiple_answers: true,
+        is_anonymous: false
+    };
+
+    await bot.sendPoll(initialMessage.from.id, "İhtiyacınızı belirtiniz", needs, pollOptions)
+
 }
 
 async function handleStatusMessage(statusMessage) {
@@ -16,9 +23,9 @@ async function handleStatusMessage(statusMessage) {
         }
     };
 
-    let locationMessageRequest = await bot.sendMessage(statusMessage.from.id, 'Konum bilgilerinizi paylaşabilir misiniz?', opts);
+    let locationMessageRequest = await bot.sendMessage(statusMessage.user.id, 'Konum bilgilerinizi paylaşabilir misiniz?', opts);
     bot.onReplyToMessage(
-        statusMessage.chat.id,
+        statusMessage.user.id,
         locationMessageRequest.message_id,
         (locationMessage) => handleLocationMessage(statusMessage, locationMessage)
     )
@@ -45,7 +52,8 @@ async function handleLocationMessage(statusMessage, locationMessage) {
 }
 
 async function handleContactMessage(statusMessage, locationMessage, contactMessage) {
-    console.log(statusMessage.text, locationMessage.location, contactMessage.contact)
+    selected_needs = statusMessage.option_ids.map(i => needs[i])
+    console.log(selected_needs, locationMessage.location, contactMessage.contact)
     await bot.sendMessage(
         contactMessage.chat.id,
         "Bilgileriniz alınmıştır teşekkürler."
@@ -54,4 +62,5 @@ async function handleContactMessage(statusMessage, locationMessage, contactMessa
 
 const token = process.env.TELEGRAM_TOKEN;
 const bot = new TelegramBot(token, {polling: true});
+bot.on("poll_answer", handleStatusMessage)
 bot.onText(new RegExp("start", "i"), handleInitialMessage);
